@@ -23,7 +23,7 @@ WORK = 2048                # supersampled working size
 OUT = {"Community.png": 1024, "Community.jpg": 640}
 
 # hub node, then the two leaf nodes
-NODES = ["CinenakK/Part_K.png", "Marketing.jpg", "Brettspieltreff.jpg"]
+NODES = ["[deprecated]CinenakK/Part_K.png", "Marketing.jpg", "Brettspieltreff.jpg"]
 
 # ---------------------------------------------------------------- geometry
 # design space is the 640 frame before the fit transform
