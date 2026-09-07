@@ -6,6 +6,11 @@ T-connector, two leaf nodes) and drops the *original* icon files into the
 three node windows, so every embedded glyph is pixel-identical to the icon
 it stands for. Swap a component by editing NODES below and re-running.
 
+Pending: the hub is to become the current CineNAK lockup, kept whole and with
+its chalkboard texture intact - i.e. NODES[0] = ("CineNAK.png", False). It
+still points at the deprecated CineNAK K because that asset is not in the
+repo yet, and HEAD has to keep building.
+
 Palette measured from the lossless PNGs of this set and from
 ../../logo/FSINF_dark_bg_square_transparent.svg:
     background #0E192D (flat)   blue #003A79
@@ -22,8 +27,18 @@ BLUE = "#003A79"
 WORK = 2048                # supersampled working size
 OUT = {"Community.png": 1024, "Community.jpg": 640}
 
-# hub node, then the two leaf nodes
-NODES = ["[deprecated]CinenakK/Part_K.png", "Marketing.jpg", "Brettspieltreff.jpg"]
+# Hub node, then the two leaf nodes: (asset, normalise_field).
+#
+# normalise_field=True subtracts the asset's own flat background and adds this
+# set's #0E192D back, so a source shipping on a slightly different navy leaves
+# no seam where its tile meets the field. Set it False for an asset whose
+# background is a texture or photograph: there is no single background colour
+# to subtract, so normalising would only tint the whole image without removing
+# anything. Such a tile keeps its own field and therefore reads as a distinct
+# square inside its node - that is inherent to keeping the texture.
+NODES = [("[deprecated]CinenakK/Part_K.png", True),      # -> ("CineNAK.png", False)
+         ("Marketing.jpg", True),
+         ("Brettspieltreff.jpg", True)]
 
 # ---------------------------------------------------------------- geometry
 # design space is the 640 frame before the fit transform
@@ -95,14 +110,12 @@ def render(svg):
 
 
 # ------------------------------------------------------------------ crops
-def glyph_square(path):
+def glyph_square(path, normalise=True):
     """One original asset, cropped to a centred square around its own artwork so
-    it fills the node window, and put on this set's field with no visible edge.
+    it fills the node window.
 
     Assets with an alpha channel are composited straight onto #0E192D. Flat
-    assets get their own background subtracted and #0E192D added back, so a
-    source that ships on a slightly different navy (Brettspieltreff is on
-    #151C2D) leaves no seam where the tile meets the field."""
+    assets are handled per the normalise flag documented on NODES."""
     im = Image.open(os.path.join(HERE, path))
     if im.mode in ("RGBA", "LA") or "transparency" in im.info:
         im = im.convert("RGBA")
@@ -113,6 +126,9 @@ def glyph_square(path):
             Image.new("RGBA", (box[2] - box[0], box[3] - box[1]), BG + (255,)),
             im.crop(box)).convert("RGB")
     a = np.asarray(im.convert("RGB")).astype(np.int16)
+    if not normalise:
+        # textured background: keep every pixel, the whole square is the artwork
+        return im.convert("RGB")
     edge = np.concatenate([a[:6].reshape(-1, 3), a[-6:].reshape(-1, 3)])
     a = np.clip(a - np.median(edge, axis=0) + np.array(BG), 0, 255)
     ys, xs = np.nonzero(np.abs(a - np.array(BG)).max(axis=2) > 12)
@@ -135,11 +151,13 @@ ImageDraw.Draw(mask).rounded_rectangle((0, 0, 2 * inner - 1, 2 * inner - 1), rad
 canvas = Image.new("RGBA", (WORK, WORK), BG + (255,))
 canvas = Image.alpha_composite(canvas, render(frame_svg(shadow=True)))
 
-for src, centre in zip(NODES, [HUB, (LEAF_X[0], LEAF_Y), (LEAF_X[1], LEAF_Y)]):
+for (src, norm), centre in zip(NODES, [HUB, (LEAF_X[0], LEAF_Y), (LEAF_X[1], LEAF_Y)]):
     fx, fy = to_frame(centre)
-    n = round(2 * inner * INSET)
+    # a kept-texture tile fills its window: insetting it would frame the
+    # texture in a band of field colour, which looks like a mount
+    n = 2 * inner if not norm else round(2 * inner * INSET)
     tile = Image.new("RGB", (2 * inner, 2 * inner), BG)
-    tile.paste(glyph_square(src).resize((n, n), Image.LANCZOS),
+    tile.paste(glyph_square(src, norm).resize((n, n), Image.LANCZOS),
                (inner - n // 2, inner - n // 2))
     canvas.paste(tile, (round(fx * k) - inner, round(fy * k) - inner), mask)
 
