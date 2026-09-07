@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Gruppenvorstände.png / Gruppenvorstände.jpg for the WhatsApp icon set.
+"""Build Gruppenvorstände.png for the WhatsApp icon set.
 
 The mark reuses the LAN-Party network topology as its skeleton (hub node,
 T-connector, two leaf nodes) and drops the *original* icon files into the
@@ -24,7 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 BG = (14, 25, 45)          # #0E192D
 BLUE = "#003A79"
 WORK = 2048                # supersampled working size
-OUT = {"Gruppenvorstände.png": 1024, "Gruppenvorstände.jpg": 640}
+OUT = {"Gruppenvorstände.png": 1024}
 
 # Hub node, then the two leaf nodes: (asset, normalise_field, inset).
 #
