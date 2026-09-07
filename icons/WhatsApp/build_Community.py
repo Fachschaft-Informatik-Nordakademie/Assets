@@ -34,7 +34,7 @@ OUT = {"Community.png": 1024, "Community.jpg": 640}
 # background is a texture or photograph: there is no single background colour
 # to subtract, so normalising would only tint the whole image without removing
 # anything. Such a tile keeps its own field and therefore reads as a distinct
-# square inside its node - that is inherent to keeping the texture.
+# panel inside its node - that is inherent to keeping the texture.
 NODES = [("CineNAK.png", False),                 # kept whole, chalkboard texture intact
          ("Marketing.jpg", True),
          ("Brettspieltreff.jpg", True)]
@@ -48,7 +48,7 @@ INNER = C - RING // 2                  # interior half-extent
 D_X = (LEAF_X[0] - C - HALO, LEAF_X[1] + C + HALO)
 D_Y = (HUB[1] - C - HALO, LEAF_Y + C + HALO)
 TARGET = 474                           # max extent in the 640 frame (set uses 400-490)
-INSET = 0.88                           # keep embedded artwork clear of the ring
+INSET = 0.80                           # embedded artwork leaves a margin inside the ring
 S = TARGET / max(D_X[1] - D_X[0], D_Y[1] - D_Y[0])
 CY = (D_Y[0] + D_Y[1]) / 2
 
@@ -144,21 +144,18 @@ k = WORK / 640
 inner = round(INNER * S * k)                 # interior half-extent, working px
 rad = round((R - RING / 2) * S * k)          # interior corner radius
 
-mask = Image.new("L", (2 * inner, 2 * inner), 0)
-ImageDraw.Draw(mask).rounded_rectangle((0, 0, 2 * inner - 1, 2 * inner - 1), rad, fill=255)
-
 canvas = Image.new("RGBA", (WORK, WORK), BG + (255,))
 canvas = Image.alpha_composite(canvas, render(frame_svg(shadow=True)))
 
+n = round(2 * inner * INSET)               # tile size, leaving a margin
+tile_rad = round(rad * INSET)              # corner radius kept in proportion
+tile_mask = Image.new("L", (n, n), 0)
+ImageDraw.Draw(tile_mask).rounded_rectangle((0, 0, n - 1, n - 1), tile_rad, fill=255)
+
 for (src, norm), centre in zip(NODES, [HUB, (LEAF_X[0], LEAF_Y), (LEAF_X[1], LEAF_Y)]):
     fx, fy = to_frame(centre)
-    # a kept-texture tile fills its window: insetting it would frame the
-    # texture in a band of field colour, which looks like a mount
-    n = 2 * inner if not norm else round(2 * inner * INSET)
-    tile = Image.new("RGB", (2 * inner, 2 * inner), BG)
-    tile.paste(glyph_square(src, norm).resize((n, n), Image.LANCZOS),
-               (inner - n // 2, inner - n // 2))
-    canvas.paste(tile, (round(fx * k) - inner, round(fy * k) - inner), mask)
+    art = glyph_square(src, norm).resize((n, n), Image.LANCZOS)
+    canvas.paste(art, (round(fx * k) - n // 2, round(fy * k) - n // 2), tile_mask)
 
 canvas = Image.alpha_composite(canvas, render(frame_svg(shadow=False)))
 
