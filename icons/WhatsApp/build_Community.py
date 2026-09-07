@@ -6,10 +6,9 @@ T-connector, two leaf nodes) and drops the *original* icon files into the
 three node windows, so every embedded glyph is pixel-identical to the icon
 it stands for. Swap a component by editing NODES below and re-running.
 
-Pending: the hub is to become the current CineNAK lockup, kept whole and with
-its chalkboard texture intact - i.e. NODES[0] = ("CineNAK.png", False). It
-still points at the deprecated CineNAK K because that asset is not in the
-repo yet, and HEAD has to keep building.
+The hub is the current CineNAK lockup, kept whole and with its chalkboard
+texture intact, so that tile keeps its own dark field rather than this set's.
+The superseded assets live in [deprecated]CinenakK/.
 
 Palette measured from the lossless PNGs of this set and from
 ../../logo/FSINF_dark_bg_square_transparent.svg:
@@ -36,7 +35,7 @@ OUT = {"Community.png": 1024, "Community.jpg": 640}
 # to subtract, so normalising would only tint the whole image without removing
 # anything. Such a tile keeps its own field and therefore reads as a distinct
 # square inside its node - that is inherent to keeping the texture.
-NODES = [("[deprecated]CinenakK/Part_K.png", True),      # -> ("CineNAK.png", False)
+NODES = [("CineNAK.png", False),                 # kept whole, chalkboard texture intact
          ("Marketing.jpg", True),
          ("Brettspieltreff.jpg", True)]
 
