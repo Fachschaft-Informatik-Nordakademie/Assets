@@ -26,7 +26,13 @@ BLUE = "#003A79"
 WORK = 2048                # supersampled working size
 OUT = {"Community.png": 1024, "Community.jpg": 640}
 
-# Hub node, then the two leaf nodes: (asset, normalise_field).
+# Hub node, then the two leaf nodes: (asset, normalise_field, inset).
+#
+# inset is the tile's size as a fraction of the node window, so the artwork
+# sits in a band of field colour rather than against the white ring. It is per
+# asset because the sources are framed differently: the CineNAK lockup carries
+# its own padding inside its square, while the flat icons are cropped tight to
+# their glyph and so need a larger margin to look equally roomy.
 #
 # normalise_field=True subtracts the asset's own flat background and adds this
 # set's #0E192D back, so a source shipping on a slightly different navy leaves
@@ -35,9 +41,9 @@ OUT = {"Community.png": 1024, "Community.jpg": 640}
 # to subtract, so normalising would only tint the whole image without removing
 # anything. Such a tile keeps its own field and therefore reads as a distinct
 # panel inside its node - that is inherent to keeping the texture.
-NODES = [("CineNAK.png", False),                 # kept whole, chalkboard texture intact
-         ("Marketing.jpg", True),
-         ("Brettspieltreff.jpg", True)]
+NODES = [("CineNAK.png", False, 0.80),           # kept whole, chalkboard texture intact
+         ("Marketing.jpg", True, 0.72),
+         ("Brettspieltreff.jpg", True, 0.72)]
 
 # ---------------------------------------------------------------- geometry
 # design space is the 640 frame before the fit transform
@@ -48,7 +54,6 @@ INNER = C - RING // 2                  # interior half-extent
 D_X = (LEAF_X[0] - C - HALO, LEAF_X[1] + C + HALO)
 D_Y = (HUB[1] - C - HALO, LEAF_Y + C + HALO)
 TARGET = 474                           # max extent in the 640 frame (set uses 400-490)
-INSET = 0.80                           # embedded artwork leaves a margin inside the ring
 S = TARGET / max(D_X[1] - D_X[0], D_Y[1] - D_Y[0])
 CY = (D_Y[0] + D_Y[1]) / 2
 
@@ -147,14 +152,13 @@ rad = round((R - RING / 2) * S * k)          # interior corner radius
 canvas = Image.new("RGBA", (WORK, WORK), BG + (255,))
 canvas = Image.alpha_composite(canvas, render(frame_svg(shadow=True)))
 
-n = round(2 * inner * INSET)               # tile size, leaving a margin
-tile_rad = round(rad * INSET)              # corner radius kept in proportion
-tile_mask = Image.new("L", (n, n), 0)
-ImageDraw.Draw(tile_mask).rounded_rectangle((0, 0, n - 1, n - 1), tile_rad, fill=255)
-
-for (src, norm), centre in zip(NODES, [HUB, (LEAF_X[0], LEAF_Y), (LEAF_X[1], LEAF_Y)]):
+for (src, norm, inset), centre in zip(NODES, [HUB, (LEAF_X[0], LEAF_Y), (LEAF_X[1], LEAF_Y)]):
     fx, fy = to_frame(centre)
+    n = round(2 * inner * inset)             # tile size, leaving a margin
     art = glyph_square(src, norm).resize((n, n), Image.LANCZOS)
+    tile_mask = Image.new("L", (n, n), 0)    # corner radius kept in proportion
+    ImageDraw.Draw(tile_mask).rounded_rectangle(
+        (0, 0, n - 1, n - 1), round(rad * inset), fill=255)
     canvas.paste(art, (round(fx * k) - n // 2, round(fy * k) - n // 2), tile_mask)
 
 canvas = Image.alpha_composite(canvas, render(frame_svg(shadow=False)))
